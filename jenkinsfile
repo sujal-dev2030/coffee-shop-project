@@ -1,0 +1,50 @@
+
+pipeline {
+    agent any
+
+    stages {
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
+
+        stage('Install Dependencies') {
+            steps {
+                bat 'python -m pip install -r requirements.txt'
+            }
+        }
+
+        stage('Run Tests') {
+            steps {
+                bat 'python -m pytest -v'
+            }
+        }
+
+        stage('Build Docker Image') {
+            steps {
+                bat 'docker build -t coffee-shop-project:latest .'
+            }
+        }
+
+        stage('Push to Docker Hub') {
+            when {
+                branch 'main'
+            }
+            steps {
+                withCredentials([
+                    usernamePassword(
+                        credentialsId: 'dockerhub-creds',
+                        usernameVariable: 'DOCKER_USER',
+                        passwordVariable: 'DOCKER_TOKEN'
+                    )
+                ]) {
+                    bat 'docker login -u "%DOCKER_USER%" -p "%DOCKER_TOKEN%"'
+                    bat 'docker tag coffee-shop-project:latest %DOCKER_USER%/coffee-shop-project:latest'
+                    bat 'docker push %DOCKER_USER%/coffee-shop-project:latest'
+                    bat 'docker logout'
+                }
+            }
+        }
+    }
+}
