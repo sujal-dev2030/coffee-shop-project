@@ -4,3 +4,4 @@ __pycache__/
 *.pyc
 coffee_shop.db
 .env
+.git
